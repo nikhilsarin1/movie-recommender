@@ -10,6 +10,16 @@ class IBCFRecommender:
         self.ratings_matrix = None
         self.movies_df = None
         self.centered_ratings = None  # Store for verification
+
+    def load_compressed_data(self, filepath):
+        import gzip
+        print(f"Loading compressed file: {filepath}")
+        if filepath.endswith('.csv.gz'):
+            with gzip.open(filepath, 'rt') as f:
+                return pd.read_csv(f)
+        elif filepath.endswith('.npy.gz'):
+            with gzip.open(filepath, 'rb') as f:
+                return np.load(f)
         
     def verify_first_rows_centering(self, centered_data):
         """Verify the first 10 rows of centered data match expected values"""
@@ -209,8 +219,10 @@ class IBCFRecommender:
     def fit(self, ratings_matrix_path, movies_path, load_step2=False):
         """Train the IBCF recommender with verification steps"""
         print("Loading data...")
-        self.ratings_matrix = self.data_loader.load_rating_matrix(ratings_matrix_path)
-        
+        try:
+            self.ratings_matrix = self.load_compressed_data(ratings_matrix_path + '.gz')
+        except FileNotFoundError:
+            self.ratings_matrix = pd.read_csv(ratings_matrix_path)        
         # Create mappings between movie IDs and column indices
         self.column_to_index = {col: idx for idx, col in enumerate(self.ratings_matrix.columns)}
         self.index_to_column = {idx: col for col, idx in self.column_to_index.items()}
